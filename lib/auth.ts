@@ -29,7 +29,7 @@ export const auth = betterAuth({
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
     },
   },
-  appName: "Heart Attack Prediction",
+  appName: "EczemaScan",
   plugins: [
     admin({
       defaultRole: "patient",
@@ -43,11 +43,11 @@ export const auth = betterAuth({
         if (type === "email-verification") {
           await sendEmailOrThrow({
             to: email,
-            subject: `${otp} is your Heart Attack Prediction verification code`,
-            text: `Your Heart Attack Prediction verification code is ${otp}. It expires in 10 minutes.`,
+            subject: `${otp} is your EczemaScan verification code`,
+            text: `Your EczemaScan verification code is ${otp}. It expires in 10 minutes.`,
             html: `
               <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <h2>Verify your Heart Attack Prediction email</h2>
+                <h2>Verify your EczemaScan email</h2>
                 <p>This code was requested for <strong>${email}</strong>.</p>
                 <div style="background-color: #f3f4f6; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
                   <code style="font-size: 32px; font-weight: bold; letter-spacing: 4px;">${otp}</code>
@@ -55,7 +55,7 @@ export const auth = betterAuth({
                 <p>This code will expire in 10 minutes.</p>
                 <p>If you didn't create an account, you can safely ignore this email.</p>
                 <hr style="margin: 20px 0;" />
-                <p style="color: #6b7280; font-size: 12px;">Heart Attack Prediction</p>
+                <p style="color: #6b7280; font-size: 12px;">EczemaScan</p>
               </div>
             `,
           });
@@ -63,14 +63,14 @@ export const auth = betterAuth({
           await sendEmailOrThrow({
             to: email,
             subject: "Your OTP for Sign-In",
-            text: `Your Heart Attack Prediction sign-in code is ${otp}.`,
+            text: `Your EczemaScan sign-in code is ${otp}.`,
             html: `<p>Your OTP for sign-in is: <strong>${otp}</strong></p>`,
           });
         } else {
           await sendEmailOrThrow({
             to: email,
             subject: "Your OTP Code",
-            text: `Your Heart Attack Prediction OTP code is ${otp}.`,
+            text: `Your EczemaScan OTP code is ${otp}.`,
             html: `<p>Your OTP code is: <strong>${otp}</strong></p>`,
           });
         }
