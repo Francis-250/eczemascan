@@ -75,7 +75,6 @@ export async function predictHeartDiseaseRisk(input: {
     description: input.description || "None provided",
   });
 
-  // Strip code fences if model returns JSON wrapped in markdown
   if (result.startsWith("```")) {
     result = result.replace(/^```json\s*/, "").replace(/^```\s*/, "").replace(/\s*```$/, "");
   }
