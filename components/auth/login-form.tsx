@@ -2,37 +2,88 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
+import { Loader2, AlertCircle, Sparkles } from "lucide-react";
 
 export default function LoginForm() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const res = await authClient.signIn.email({
+        email,
+        password,
+        rememberMe: remember,
+      });
+
+      if (res.error) {
+        setError(
+          res.error.message ||
+            "Invalid credentials. Please verify your email and password.",
+        );
+        setIsLoading(false);
+        return;
+      }
+
+      // Query session or user role
+      const sessionRes = await authClient.getSession();
+      const rawRole =
+        sessionRes?.data?.user?.role || (res.data?.user as any)?.role || "";
+      const userRole = String(rawRole).toUpperCase();
+
+      if (userRole === "ADMIN") {
+        window.location.href = "/admin/dashboard";
+      } else if (userRole === "DERMATOLOGIST") {
+        window.location.href = "/dermatologist/dashboard";
+      } else {
+        window.location.href = "/patient/scans";
+      }
+    } catch (err: any) {
+      setError(
+        err?.message || "An unexpected error occurred. Please try again.",
+      );
+      setIsLoading(false);
+    }
+  };
+
+  const fillCredentials = (userEmail: string, userPass: string) => {
+    setEmail(userEmail);
+    setPassword(userPass);
+    setError(null);
+  };
 
   return (
-    <div className="mx-auto w-full max-w-md">
+    <div className="mx-auto w-full max-w-sm">
       <div className="rounded-lg border border-slate-300 bg-white p-6 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
-        <div className="mb-6 flex justify-center">
-          <Link href="/">
-            <img
-              src="https://readymadeui.com/logo-alt.svg"
-              alt="SkinAI logo"
-              className="h-12 w-12"
-            />
-          </Link>
-        </div>
-
         <div className="text-center">
           <h1 className="mb-2 text-xl font-semibold text-slate-900 dark:text-slate-50">
             Welcome back
           </h1>
 
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            Enter your email and password to sign in.
+            Enter your credentials to sign in to EczemaScan.
           </p>
         </div>
 
-        <form className="mt-10 space-y-6">
+        {error && (
+          <div className="mt-4 flex items-start gap-2.5 rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+            <AlertCircle className="h-4 w-4 shrink-0 text-red-600 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="mt-6 space-y-5">
           <div>
             <label
               htmlFor="email"
@@ -47,7 +98,7 @@ export default function LoginForm() {
               name="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="john@example.com"
+              placeholder="user@eczemascan.rw"
               autoComplete="email"
               required
               className="w-full rounded-md bg-white px-3 py-2.5 text-sm text-slate-900 outline-1 -outline-offset-1 outline-slate-300 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 dark:bg-neutral-700 dark:text-slate-50 dark:outline-neutral-600"
@@ -146,50 +197,16 @@ export default function LoginForm() {
 
           <button
             type="submit"
-            className="w-full rounded-md border border-blue-600 bg-blue-600 px-3.5 py-2.5 text-sm font-semibold tracking-wide text-white transition-all hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            disabled={isLoading}
+            className="w-full rounded-md border border-blue-600 bg-blue-600 px-3.5 py-2.5 text-sm font-semibold tracking-wide text-white transition-all hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-60 flex items-center justify-center gap-2"
           >
-            Sign in
+            {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isLoading ? "Signing in..." : "Sign in"}
           </button>
         </form>
 
-        <div className="my-6 flex items-center gap-4">
-          <hr className="w-full border-slate-300 dark:border-neutral-700" />
-          <span className="text-sm text-slate-500 dark:text-slate-400">or</span>
-          <hr className="w-full border-slate-300 dark:border-neutral-700" />
-        </div>
-
-        <button
-          type="button"
-          className="flex w-full items-center justify-center gap-2.5 rounded-md border border-slate-300 bg-white px-3.5 py-2.5 text-sm font-semibold text-slate-900 hover:bg-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-neutral-600 dark:bg-neutral-700 dark:text-slate-50 dark:hover:bg-neutral-600"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-[18px] w-[18px]"
-            viewBox="0 0 48 48"
-            aria-hidden="true"
-          >
-            <path
-              fill="#FFC107"
-              d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.7 1.1 7.8 3l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c10 0 19.1-7.3 19.1-20 0-1.2-.1-2.3-.3-3.5z"
-            />
-            <path
-              fill="#FF3D00"
-              d="M6.3 14.7l6.6 4.8C14.7 16.1 19 12 24 12c3 0 5.7 1.1 7.8 3l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.6 8.3 6.3 14.7z"
-            />
-            <path
-              fill="#4CAF50"
-              d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.1 35.1 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.5 16.2 44 24 44z"
-            />
-            <path
-              fill="#1976D2"
-              d="M43.6 20.5H42V20H24v8h11.3c-1.1 3.1-3.3 5.4-6.1 6.6l6.2 5.2C39 36.6 43.1 30.9 43.1 24c0-1.2-.1-2.3-.3-3.5z"
-            />
-          </svg>
-          Sign in with Google
-        </button>
-
         <p className="mt-6 text-center text-sm text-slate-900 dark:text-slate-50">
-          Don't have an account?
+          Don&apos;t have an account?
           <Link
             href="/auth/register"
             className="ml-1 font-medium text-blue-700 hover:underline dark:text-blue-500"

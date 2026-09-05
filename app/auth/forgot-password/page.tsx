@@ -4,18 +4,9 @@ import Link from "next/link";
 
 export default function ForgotPasswordForm() {
   return (
-    <div className="mx-auto w-full max-w-md">
+    <div className="mx-auto w-full max-w-sm">
       <div className="rounded-lg border border-slate-300 bg-white p-6 shadow-sm md:p-8 dark:border-neutral-700 dark:bg-neutral-800">
         {/* Logo */}
-        <div className="mb-6 flex justify-center">
-          <Link href="/">
-            <img
-              src="https://readymadeui.com/logo-alt.svg"
-              alt="SkinAI logo"
-              className="h-12 w-12"
-            />
-          </Link>
-        </div>
 
         <div className="text-center">
           <h1 className="mb-2 text-xl font-semibold text-slate-900 dark:text-slate-50">
@@ -23,8 +14,8 @@ export default function ForgotPasswordForm() {
           </h1>
 
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            Enter your email and we'll send you a verification code to reset
-            your password.
+            Enter your email and we&apos;ll send you a verification code to
+            reset your password.
           </p>
         </div>
 

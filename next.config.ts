@@ -1,7 +1,20 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  async redirects() {
+    return [
+      {
+        source: "/doctor/:path*",
+        destination: "/dermatologist/:path*",
+        permanent: false,
+      },
+      {
+        source: "/doctor",
+        destination: "/dermatologist/dashboard",
+        permanent: false,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

@@ -3,7 +3,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { admin, emailOTP, phoneNumber } from "better-auth/plugins";
 
 import { nextCookies } from "better-auth/next-js";
-import { sendEmail, sendEmailOrThrow } from "./brevo";
+import { sendEmail, sendEmailOrThrow } from "./email";
 import { prisma } from "./prisma";
 
 export const auth = betterAuth({

@@ -2,152 +2,120 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { authClient } from "@/lib/auth-client";
+import { Loader2, AlertCircle, CheckCircle2, ArrowLeft } from "lucide-react";
 
-export default function RegisterForm() {
-  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-  const [isConfirmVisible, setIsConfirmVisible] = useState(false);
+export default function ForgotPasswordForm() {
+  const [email, setEmail] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isSent, setIsSent] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const res = await (authClient as any).forgetPassword({
+        email,
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+
+      if (res.error) {
+        setError(res.error.message || "Failed to process password reset request.");
+        setIsLoading(false);
+        return;
+      }
+
+      setIsSent(true);
+    } catch (err: any) {
+      setError(err?.message || "Failed to request password reset. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div className="mx-auto w-full max-w-md">
+    <div className="mx-auto w-full max-w-sm">
       <div className="rounded-lg border border-slate-300 bg-white p-6 shadow-sm dark:border-neutral-700 dark:bg-neutral-800">
-        <div className="mb-6 flex justify-center">
-          <Link href="/">
-            <img
-              src="https://readymadeui.com/logo-alt.svg"
-              alt="SkinAI logo"
-              className="h-12 w-12"
-            />
-          </Link>
-        </div>
         <div className="text-center">
           <h1 className="mb-2 text-xl font-semibold text-slate-900 dark:text-slate-50">
-            Create an account
+            Forgot password?
           </h1>
 
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            Create your account to get started with SkinAI.
+            Enter your account email to receive a password reset link.
           </p>
         </div>
 
-        <form className="mt-10 space-y-5">
-          <div>
-            <label
-              htmlFor="name"
-              className="mb-2 inline-block text-sm font-medium text-slate-900 dark:text-slate-50"
-            >
-              Full name
-            </label>
-
-            <input
-              type="text"
-              id="name"
-              name="name"
-              placeholder="John Doe"
-              autoComplete="name"
-              required
-              className="w-full rounded-md bg-white px-3 py-2.5 text-sm text-slate-900 outline-1 -outline-offset-1 outline-slate-300 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 dark:bg-neutral-700 dark:text-slate-50 dark:outline-neutral-600"
-            />
+        {error && (
+          <div className="mt-4 flex items-start gap-2.5 rounded-md border border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+            <AlertCircle className="h-4 w-4 shrink-0 text-red-600 mt-0.5" />
+            <span>{error}</span>
           </div>
-          <div>
-            <label
-              htmlFor="email"
-              className="mb-2 inline-block text-sm font-medium text-slate-900 dark:text-slate-50"
-            >
-              Email
-            </label>
+        )}
 
-            <input
-              type="email"
-              id="email"
-              name="email"
-              placeholder="john@example.com"
-              autoComplete="email"
-              required
-              className="w-full rounded-md bg-white px-3 py-2.5 text-sm text-slate-900 outline-1 -outline-offset-1 outline-slate-300 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 dark:bg-neutral-700 dark:text-slate-50 dark:outline-neutral-600"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="password"
-              className="mb-2 inline-block text-sm font-medium text-slate-900 dark:text-slate-50"
-            >
-              Password
-            </label>
-
-            <div className="relative">
-              <input
-                type={isPasswordVisible ? "text" : "password"}
-                id="password"
-                name="password"
-                placeholder="••••••••"
-                autoComplete="new-password"
-                required
-                className="w-full rounded-md bg-white px-3 py-2.5 pr-11 text-sm text-slate-900 outline-1 -outline-offset-1 outline-slate-300 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 dark:bg-neutral-700 dark:text-slate-50 dark:outline-neutral-600"
-              />
-
-              <button
-                type="button"
-                onClick={() => setIsPasswordVisible((prev) => !prev)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-slate-400 hover:text-slate-600"
-                aria-label={
-                  isPasswordVisible ? "Hide password" : "Show password"
-                }
-              >
-                {isPasswordVisible ? "◉" : "◯"}
-              </button>
+        {isSent ? (
+          <div className="mt-6 space-y-4">
+            <div className="flex items-start gap-2.5 rounded-md border border-green-200 bg-green-50 p-3.5 text-xs text-green-800 dark:border-green-900/50 dark:bg-green-950/40 dark:text-green-300">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600 mt-0.5" />
+              <span>
+                A reset link has been dispatched to <strong>{email}</strong>. Please check your inbox and follow the instructions.
+              </span>
             </div>
-          </div>
 
-          <div>
-            <label
-              htmlFor="confirmPassword"
-              className="mb-2 inline-block text-sm font-medium text-slate-900 dark:text-slate-50"
+            <Link
+              href="/auth/login"
+              className="mt-4 flex items-center justify-center gap-2 w-full rounded-md border border-blue-600 bg-blue-600 px-3.5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-blue-700"
             >
-              Confirm password
-            </label>
-
-            <div className="relative">
-              <input
-                type={isConfirmVisible ? "text" : "password"}
-                id="confirmPassword"
-                name="confirmPassword"
-                placeholder="••••••••"
-                autoComplete="new-password"
-                required
-                className="w-full rounded-md bg-white px-3 py-2.5 pr-11 text-sm text-slate-900 outline-1 -outline-offset-1 outline-slate-300 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 dark:bg-neutral-700 dark:text-slate-50 dark:outline-neutral-600"
-              />
-
-              <button
-                type="button"
-                onClick={() => setIsConfirmVisible((prev) => !prev)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-slate-400 hover:text-slate-600"
-                aria-label={
-                  isConfirmVisible ? "Hide password" : "Show password"
-                }
-              >
-                {isConfirmVisible ? "◉" : "◯"}
-              </button>
-            </div>
+              <ArrowLeft className="h-4 w-4" />
+              Return to Sign in
+            </Link>
           </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
+            <div>
+              <label
+                htmlFor="email"
+                className="mb-2 inline-block text-sm font-medium text-slate-900 dark:text-slate-50"
+              >
+                Email
+              </label>
 
-          <button
-            type="submit"
-            className="w-full rounded-md border border-blue-600 bg-blue-600 px-3.5 py-2.5 text-sm font-semibold tracking-wide text-white transition-all hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-          >
-            Create account
-          </button>
-        </form>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="user@eczemascan.rw"
+                autoComplete="email"
+                required
+                className="w-full rounded-md bg-white px-3 py-2.5 text-sm text-slate-900 outline-1 -outline-offset-1 outline-slate-300 focus:outline-2 focus:-outline-offset-2 focus:outline-blue-600 dark:bg-neutral-700 dark:text-slate-50 dark:outline-neutral-600"
+              />
+            </div>
 
-        <p className="mt-6 text-center text-sm text-slate-900 dark:text-slate-50">
-          Already have an account?
-          <Link
-            href="/auth/login"
-            className="ml-1 font-medium text-blue-700 hover:underline dark:text-blue-500"
-          >
-            Sign in
-          </Link>
-        </p>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full rounded-md border border-blue-600 bg-blue-600 px-3.5 py-2.5 text-sm font-semibold tracking-wide text-white transition-all hover:bg-blue-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {isLoading ? "Sending link..." : "Send reset link"}
+            </button>
+
+            <div className="text-center pt-2">
+              <Link
+                href="/auth/login"
+                className="text-sm font-medium text-blue-700 hover:underline dark:text-blue-500 inline-flex items-center gap-1.5"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                Back to Sign in
+              </Link>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
