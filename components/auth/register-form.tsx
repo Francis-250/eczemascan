@@ -4,10 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
-import { authClient } from "@/lib/auth-client";
+import { registerAccount } from "@/lib/actions/registration";
 
 export default function RegisterForm() {
   const router = useRouter();
+  const [role, setRole] = useState<"PATIENT" | "DERMATOLOGIST">("PATIENT");
+  const [licenseNumber, setLicenseNumber] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,22 +38,24 @@ export default function RegisterForm() {
     setIsLoading(true);
 
     try {
-      const res = await authClient.signUp.email({
+      const res = await registerAccount({
+        role,
+        licenseNumber,
         email,
         password,
         name,
       });
 
       if (res.error) {
-        setError(res.error.message || "Failed to create account. Please check the provided information.");
+        setError(res.error || "Failed to create account. Please check the provided information.");
         setIsLoading(false);
         return;
       }
 
       // If email verification is enabled, route to verify page
       router.push(`/auth/verify?email=${encodeURIComponent(email)}`);
-    } catch (err: any) {
-      setError(err?.message || "An unexpected error occurred. Please try again.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An unexpected error occurred. Please try again.");
       setIsLoading(false);
     }
   };
@@ -77,6 +81,17 @@ export default function RegisterForm() {
         )}
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+          <div className="space-y-2">
+            <label htmlFor="registration-role">Register as</label>
+            <select id="registration-role" value={role} onChange={(e) => setRole(e.target.value as "PATIENT" | "DERMATOLOGIST")} className="w-full rounded border p-2 bg-white dark:bg-neutral-700">
+              <option value="PATIENT">Patient</option><option value="DERMATOLOGIST">Dermatologist</option>
+            </select>
+          </div>
+          {role === "DERMATOLOGIST" && <div className="space-y-2">
+            <label htmlFor="license-number">Medical license number</label>
+            <input id="license-number" required value={licenseNumber} onChange={(e) => setLicenseNumber(e.target.value)} className="w-full rounded border p-2" />
+            <p className="text-sm">Verify your email, then wait for admin approval before accessing the doctor workspace.</p>
+          </div>}
           <div>
             <label
               htmlFor="name"

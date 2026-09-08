@@ -3,14 +3,12 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { format } from "date-fns";
-import { Filter, CheckCircle, XCircle, Loader2, UserCheck } from "lucide-react";
+import { Filter, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { verifyDermatologist } from "@/lib/actions/admin";
 import { VerificationStatus } from "@prisma/client";
 
@@ -33,8 +31,8 @@ interface DermatologistsManagementProps {
   status?: VerificationStatus;
 }
 
-const STATUS_OPTIONS: { value: VerificationStatus | ""; label: string }[] = [
-  { value: "", label: "All Statuses" },
+const STATUS_OPTIONS: { value: VerificationStatus | "ALL"; label: string }[] = [
+  { value: "ALL", label: "All Statuses" },
   { value: "PENDING", label: "Pending" },
   { value: "APPROVED", label: "Approved" },
   { value: "REJECTED", label: "Rejected" },
@@ -43,6 +41,7 @@ const STATUS_OPTIONS: { value: VerificationStatus | ""; label: string }[] = [
 export default function DermatologistsManagement({ dermatologists, total, page, totalPages, status }: DermatologistsManagementProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [feedback, setFeedback] = useState<string | null>(null);
   const [verifyingIds, setVerifyingIds] = useState<Set<string>>(new Set());
 
   const handleFilter = (e: React.FormEvent<HTMLFormElement>) => {
@@ -50,17 +49,20 @@ export default function DermatologistsManagement({ dermatologists, total, page, 
     const formData = new FormData(e.currentTarget);
     const newStatus = formData.get("status") as string;
     const params = new URLSearchParams();
-    if (newStatus) params.set("status", newStatus);
+    if (newStatus && newStatus !== "ALL") params.set("status", newStatus);
     router.push(`/admin/dermatologists?${params.toString()}`);
   };
 
   const handleVerify = async (dermatologistId: string, newStatus: VerificationStatus) => {
+    setFeedback(null);
     setVerifyingIds((prev) => new Set(prev).add(dermatologistId));
     try {
-      await verifyDermatologist(dermatologistId, newStatus);
+      const result = await verifyDermatologist(dermatologistId, newStatus);
+      if (result.error) { setFeedback(result.error); return; }
+      setFeedback(newStatus === "APPROVED" ? "Dermatologist approved." : "Dermatologist rejected.");
       router.refresh();
     } catch {
-      alert("Failed to update verification status");
+      setFeedback("Failed to update verification status");
     } finally {
       setVerifyingIds((prev) => {
         const next = new Set(prev);
@@ -71,7 +73,7 @@ export default function DermatologistsManagement({ dermatologists, total, page, 
   };
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Dermatologist Verification</h1>
@@ -81,10 +83,11 @@ export default function DermatologistsManagement({ dermatologists, total, page, 
         </div>
       </div>
 
+      {feedback && <p role="status" className="rounded border p-3">{feedback}</p>}
       <Card>
         <CardHeader>
           <form onSubmit={handleFilter} className="flex flex-col sm:flex-row gap-4">
-            <Select name="status" onValueChange={() => {}} defaultValue={status || ""}>
+            <Select name="status" onValueChange={() => {}} defaultValue={status || "ALL"}>
               <SelectTrigger className="w-full sm:w-56">
                 <SelectValue placeholder="All Statuses" />
               </SelectTrigger>
@@ -101,109 +104,53 @@ export default function DermatologistsManagement({ dermatologists, total, page, 
           </form>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
+          <div className="w-full min-w-0">
+            <table className="w-full table-fixed text-xs sm:text-sm">
               <TableHeader>
                 <TableRow>
-                  <TableHead>Dermatologist</TableHead>
-                  <TableHead>License</TableHead>
-                  <TableHead>Specialty</TableHead>
-                  <TableHead>Hospital</TableHead>
-                  <TableHead>Experience</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Reviews</TableHead>
-                  <TableHead>Joined</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="w-[35%] px-1 sm:px-3">Name</TableHead>
+                  <TableHead className="w-[25%] px-1 sm:px-3">Status</TableHead>
+                  <TableHead className="w-[40%] px-1 text-right sm:px-3">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
+                {dermatologists.length === 0 && <TableRow><TableCell colSpan={3} className="text-center text-slate-500">No dermatologists found.</TableCell></TableRow>}
                 {dermatologists.map((derm) => (
                   <TableRow key={derm.id}>
-                    <TableCell>
-                      <div>
-                        <Link href={`/admin/dermatologists/${derm.id}/verify`} className="font-medium text-slate-900 dark:text-slate-50 hover:text-blue-600">
-                          Dr. {derm.user.name}
-                        </Link>
-                        <p className="text-sm text-slate-500 dark:text-slate-400">{derm.user.email}</p>
-                      </div>
+                    <TableCell className="px-1 py-3 sm:px-3">
+                      <Link href={`/admin/dermatologists/${derm.id}/verify`} className="break-words [overflow-wrap:anywhere] font-medium text-slate-900 dark:text-slate-50 hover:text-blue-600">
+                        {derm.user.name}
+                      </Link>
                     </TableCell>
-                    <TableCell className="font-mono text-sm">{derm.licenseNumber}</TableCell>
-                    <TableCell>{derm.specialty || "-"}</TableCell>
-                    <TableCell>{derm.hospitalAffiliation || "-"}</TableCell>
-                    <TableCell>{derm.yearsOfExperience ? `${derm.yearsOfExperience} yrs` : "-"}</TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={
-                          derm.verificationStatus === "APPROVED" ? "success"
-                          : derm.verificationStatus === "PENDING" ? "warning"
-                          : "destructive"
-                        }
-                      >
-                        {derm.verificationStatus}
+                    <TableCell className="px-1 py-3 sm:px-3">
+                      <Badge className="max-w-full px-1 text-[10px] sm:px-2 sm:text-xs" variant={derm.verificationStatus === "APPROVED" ? "success" : derm.verificationStatus === "PENDING" ? "warning" : "destructive"}>
+                        {derm.verificationStatus === "APPROVED" ? "Approved" : derm.verificationStatus === "PENDING" ? "Pending" : "Rejected"}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-center">{derm._count.reviews}</TableCell>
-                    <TableCell className="text-sm text-slate-500 dark:text-slate-400">
-                      {format(new Date(derm.user.createdAt), "MMM d, yyyy")}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <span className="sr-only">Open menu</span>
-                            <UserCheck className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => handleVerify(derm.id, "APPROVED")}
-                            disabled={verifyingIds.has(derm.id) || derm.verificationStatus === "APPROVED"}
-                          >
-                            {verifyingIds.has(derm.id) ? (
-                              <>
-                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                Approving...
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle className="h-4 w-4 mr-2 text-green-600" />
-                                Approve
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleVerify(derm.id, "REJECTED")}
-                            disabled={verifyingIds.has(derm.id) || derm.verificationStatus === "REJECTED"}
-                            className="text-red-600"
-                          >
-                            {verifyingIds.has(derm.id) ? (
-                              <>
-                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                                Rejecting...
-                              </>
-                            ) : (
-                              <>
-                                <XCircle className="h-4 w-4 mr-2" />
-                                Reject
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/admin/dermatologists/${derm.id}/verify`}>
-                              View Details
-                            </Link>
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                    <TableCell className="px-1 py-3 sm:px-3">
+                      <div className="flex flex-wrap items-center justify-end gap-1 sm:gap-2">
+                      <Button size="sm" className="h-8 px-1 sm:px-2" aria-label={`Approve ${derm.user.name}`} title="Approve" disabled={verifyingIds.has(derm.id) || derm.verificationStatus === "APPROVED"} onClick={() => handleVerify(derm.id, "APPROVED")}>
+                        {verifyingIds.has(derm.id) ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}<span className="hidden lg:inline">Approve</span>
+                      </Button>
+
+
+                      <Button size="sm" variant="outline" className="h-8 px-1 sm:px-2" aria-label={`Reject ${derm.user.name}`} title="Reject" disabled={verifyingIds.has(derm.id) || derm.verificationStatus === "REJECTED"} onClick={() => handleVerify(derm.id, "REJECTED")}>
+                        <XCircle className="h-4 w-4" /><span className="hidden lg:inline">Reject</span>
+                      </Button>
+
+
+                      <Button size="sm" variant="ghost" className="h-8 px-1 text-xs sm:px-2" asChild><Link aria-label={`View ${derm.user.name}`} href={`/admin/dermatologists/${derm.id}/verify`}>View</Link></Button>
+
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
-            </Table>
+            </table>
           </div>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
               <p className="text-sm text-slate-500 dark:text-slate-400">
                 Page {page} of {totalPages} • {total} total
               </p>

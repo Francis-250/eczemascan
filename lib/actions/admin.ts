@@ -164,6 +164,8 @@ export async function verifyDermatologist(dermatologistId: string, status: Verif
     return { error: "Unauthorized" };
   }
 
+  if (!["APPROVED", "REJECTED", "PENDING"].includes(status)) return { error: "Invalid approval status" };
+
   await prisma.dermatologistProfile.update({
     where: { id: dermatologistId },
     data: {
@@ -180,7 +182,9 @@ export async function verifyDermatologist(dermatologistId: string, status: Verif
     },
   });
 
-  revalidatePath("/admin/dermatologists");
+  revalidatePath("/admin/dermatologists", "layout");
+  revalidatePath("/auth/doctor-status");
+  revalidatePath("/dermatologist", "layout");
   return { success: true };
 }
 

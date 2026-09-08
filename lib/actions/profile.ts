@@ -1,5 +1,6 @@
 "use server";
 
+import { isDoctorRole } from "@/lib/onboarding";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth-server";
 import { revalidatePath } from "next/cache";
@@ -30,6 +31,10 @@ export async function updatePatientProfile(formData: FormData) {
   const familyHistory = formData.get("familyHistory") === "true";
   const location = formData.get("location") as string;
 
+  const birthDate = new Date(dateOfBirth);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOfBirth || "") || !Number.isFinite(birthDate.getTime()) || birthDate > new Date() || birthDate.toISOString().slice(0, 10) !== dateOfBirth || !["Male", "Female", "Other", "Prefer not to say"].includes(sex)) {
+    return { error: "Enter a valid date of birth and select your sex." };
+  }
   const profile = await prisma.patientProfile.upsert({
     where: { userId: session.user.id },
     update: {
@@ -59,13 +64,14 @@ export async function updatePatientProfile(formData: FormData) {
     },
   });
 
-  revalidatePath("/patient/profile");
+  revalidatePath("/patient", "layout");
+  revalidatePath("/auth/complete-profile");
   return { profile };
 }
 
 export async function getDermatologistProfile() {
   const session = await getSession();
-  if (!session?.user || session.user.role !== "DERMATOLOGIST") {
+  if (!session?.user || !isDoctorRole(session.user.role)) {
     return { error: "Unauthorized" };
   }
 
@@ -78,7 +84,7 @@ export async function getDermatologistProfile() {
 
 export async function updateDermatologistProfile(formData: FormData) {
   const session = await getSession();
-  if (!session?.user || session.user.role !== "DERMATOLOGIST") {
+  if (!session?.user || !isDoctorRole(session.user.role)) {
     return { error: "Unauthorized" };
   }
 
@@ -92,9 +98,11 @@ export async function updateDermatologistProfile(formData: FormData) {
     return { error: "License number is required" };
   }
 
+  const existing = await prisma.dermatologistProfile.findUnique({ where: { userId: session.user.id } });
   const profile = await prisma.dermatologistProfile.upsert({
     where: { userId: session.user.id },
     update: {
+      ...(existing?.licenseNumber !== licenseNumber ? { verificationStatus: "PENDING", verifiedAt: null } : {}),
       licenseNumber,
       specialty: specialty || null,
       hospitalAffiliation: hospitalAffiliation || null,

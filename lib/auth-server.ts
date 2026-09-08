@@ -1,3 +1,4 @@
+import { prisma } from "./prisma";
 import { auth } from "./auth";
 import { headers } from "next/headers";
 
@@ -34,7 +35,10 @@ export async function requireAdmin() {
 }
 
 export async function requireDermatologist() {
-  return requireRole(["DERMATOLOGIST"]);
+  const result = await requireRole(["DERMATOLOGIST"]);
+  if (!result.authorized || !result.user) return result;
+  const profile = await prisma.dermatologistProfile.findUnique({ where: { userId: result.user.id } });
+  return { ...result, authorized: profile?.verificationStatus === "APPROVED" && result.user.emailVerified };
 }
 
 export async function requirePatient() {

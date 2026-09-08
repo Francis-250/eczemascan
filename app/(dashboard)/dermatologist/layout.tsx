@@ -9,7 +9,7 @@ export default async function DermatologistLayout({
 }) {
   const { authorized } = await requireDermatologist();
   if (!authorized) {
-    redirect("/auth/login");
+    redirect("/auth/doctor-status");
   }
 
   return (

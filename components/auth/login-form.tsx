@@ -40,20 +40,8 @@ export default function LoginForm() {
         return;
       }
 
+      router.replace("/auth/continue");
       router.refresh();
-      // Query session or user role
-      const sessionRes = await authClient.getSession();
-      const rawRole =
-        sessionRes?.data?.user?.role || res.data?.user?.role || "";
-      const userRole = String(rawRole).toUpperCase();
-
-      if (userRole === "ADMIN") {
-        router.replace("/admin/dashboard");
-      } else if (userRole === "DERMATOLOGIST") {
-        router.replace("/dermatologist/dashboard");
-      } else {
-        router.replace("/patient/scans");
-      }
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "An unexpected error occurred. Please try again.",

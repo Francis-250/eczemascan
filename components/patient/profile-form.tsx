@@ -15,8 +15,8 @@ import { updatePatientProfile } from "@/lib/actions/profile";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const profileSchema = z.object({
-  dateOfBirth: z.string().optional(),
-  sex: z.string().optional(),
+  dateOfBirth: z.string().min(1, "Date of birth is required"),
+  sex: z.string().min(1, "Sex is required"),
   skinType: z.string().optional(),
   allergyHistory: z.boolean(),
   familyHistory: z.boolean(),
@@ -42,6 +42,7 @@ const SEX_OPTIONS = [
 ];
 
 interface PatientProfileFormProps {
+  onboarding?: boolean;
   initialProfile?: {
     dateOfBirth: Date | null;
     sex: string | null;
@@ -52,7 +53,7 @@ interface PatientProfileFormProps {
   } | null;
 }
 
-export default function PatientProfileForm({ initialProfile }: PatientProfileFormProps) {
+export default function PatientProfileForm({ initialProfile, onboarding = false }: PatientProfileFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -85,6 +86,7 @@ export default function PatientProfileForm({ initialProfile }: PatientProfileFor
       if (result.error) {
         alert(result.error);
       } else {
+        if (onboarding) { router.replace("/auth/continue"); router.refresh(); return; }
         setSuccess(true);
         setTimeout(() => setSuccess(false), 2000);
       }
@@ -98,9 +100,9 @@ export default function PatientProfileForm({ initialProfile }: PatientProfileFor
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Patient Profile</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">{onboarding ? "Complete your profile" : "Patient Profile"}</h1>
         <p className="text-slate-600 dark:text-slate-400 mt-1">
-          Update your profile information to help improve AI analysis accuracy.
+          Enter your date of birth and sex so your doctor has the correct patient details.
         </p>
       </div>
 
@@ -122,12 +124,14 @@ export default function PatientProfileForm({ initialProfile }: PatientProfileFor
               <Input
                 id="dateOfBirth"
                 type="date"
+                required
                 max={new Date().toISOString().split("T")[0]}
                 {...register("dateOfBirth")}
               />
             </div>
 
             <div>
+              {errors.dateOfBirth && <p className="text-sm text-red-600">{errors.dateOfBirth.message}</p>}
               <Label htmlFor="sex">Sex</Label>
               <Select onValueChange={(v) => setValue("sex", v)} defaultValue={watch("sex")}>
                 <SelectTrigger>
@@ -142,6 +146,7 @@ export default function PatientProfileForm({ initialProfile }: PatientProfileFor
             </div>
 
             <div>
+              {errors.sex && <p className="text-sm text-red-600">{errors.sex.message}</p>}
               <Label htmlFor="skinType">Fitzpatrick Skin Type</Label>
               <Select onValueChange={(v) => setValue("skinType", v)} defaultValue={watch("skinType")}>
                 <SelectTrigger>
@@ -215,9 +220,9 @@ export default function PatientProfileForm({ initialProfile }: PatientProfileFor
               "Save Changes"
             )}
           </Button>
-          <Button type="button" variant="outline" onClick={() => router.back()}>
+          {!onboarding && <Button type="button" variant="outline" onClick={() => router.back()}>
             Cancel
-          </Button>
+          </Button>}
         </div>
       </form>
 
@@ -228,10 +233,9 @@ export default function PatientProfileForm({ initialProfile }: PatientProfileFor
               Important
             </Badge>
             <div className="text-sm text-amber-800 dark:text-amber-300">
-              <p className="font-medium mb-1">Profile data is used for AI analysis context</p>
+              <p className="font-medium mb-1">Profile data is available to your reviewing doctor</p>
               <p>
-                Your profile information (age, sex, allergy history, family history) is shared with the AI
-                model to provide more accurate condition predictions. This data is not used for any other purpose.
+                Your doctor can review these details alongside your scan. Automated image analysis uses only the photograph.
               </p>
             </div>
           </div>

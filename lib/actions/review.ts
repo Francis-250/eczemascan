@@ -1,13 +1,14 @@
 "use server";
 
+import { isDoctorRole } from "@/lib/onboarding";
 import { prisma } from "@/lib/prisma";
-import { getSession } from "@/lib/auth-server";
+import { getSession, requireDermatologist } from "@/lib/auth-server";
 import { ScanStatus, ReviewVerdict } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
 export async function getPendingScans() {
   const session = await getSession();
-  if (!session?.user || session.user.role !== "DERMATOLOGIST") {
+  if (!session?.user || !isDoctorRole(session.user.role) || !(await requireDermatologist()).authorized) {
     return { error: "Unauthorized" };
   }
 
@@ -35,7 +36,7 @@ export async function getPendingScans() {
 
 export async function getDermatologistReviews() {
   const session = await getSession();
-  if (!session?.user || session.user.role !== "DERMATOLOGIST") {
+  if (!session?.user || !isDoctorRole(session.user.role) || !(await requireDermatologist()).authorized) {
     return { error: "Unauthorized" };
   }
 
@@ -57,7 +58,7 @@ export async function getDermatologistReviews() {
 
 export async function getDermatologistStats() {
   const session = await getSession();
-  if (!session?.user || session.user.role !== "DERMATOLOGIST") {
+  if (!session?.user || !isDoctorRole(session.user.role) || !(await requireDermatologist()).authorized) {
     return { error: "Unauthorized" };
   }
 
@@ -76,7 +77,7 @@ export async function getDermatologistStats() {
 
 export async function submitScanReview(formData: FormData) {
   const session = await getSession();
-  if (!session?.user || session.user.role !== "DERMATOLOGIST") {
+  if (!session?.user || !isDoctorRole(session.user.role) || !(await requireDermatologist()).authorized) {
     return { error: "Unauthorized" };
   }
 

@@ -12,6 +12,11 @@ export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+  databaseHooks: {
+    user: { create: { before: async (user, context) => ({
+      data: { ...user, role: context?.headers?.get("x-registration-role") === "DERMATOLOGIST" ? "DERMATOLOGIST" : "PATIENT" },
+    }) } },
+  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,

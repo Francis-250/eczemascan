@@ -1,6 +1,7 @@
 "use server";
 
 import sharp from "sharp";
+import { isDoctorRole, isPatientProfileComplete } from "@/lib/onboarding";
 import { prisma } from "@/lib/prisma";
 import { predictEczemaCondition } from "@/lib/groq";
 import { getSession } from "@/lib/auth-server";
@@ -16,6 +17,9 @@ export async function createScan(formData: FormData) {
   if (session.user.role !== "PATIENT") {
     return { error: "Only patients can create scans" };
   }
+
+  const profile = await prisma.patientProfile.findUnique({ where: { userId: session.user.id } });
+  if (!session.user.emailVerified || !isPatientProfileComplete(profile)) return { error: "Complete your patient profile before submitting a scan." };
 
   const imageFile = formData.get("image") as File;
   if (!(imageFile instanceof File) || imageFile.size === 0) {
@@ -149,7 +153,7 @@ export async function getScanById(scanId: string) {
     return { error: "Unauthorized" };
   }
 
-  if (session.user.role === "DERMATOLOGIST") {
+  if (isDoctorRole(session.user.role)) {
     const profile = await prisma.dermatologistProfile.findUnique({
       where: { userId: session.user.id },
     });

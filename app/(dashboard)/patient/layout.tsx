@@ -1,5 +1,7 @@
 import { redirect } from "next/navigation";
 import { requirePatient } from "@/lib/auth-server";
+import { prisma } from "@/lib/prisma";
+import { isPatientProfileComplete } from "@/lib/onboarding";
 import PatientHeader from "@/components/layout/patient-header";
 
 export default async function PatientLayout({
@@ -7,10 +9,14 @@ export default async function PatientLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { authorized } = await requirePatient();
+  const { authorized, user } = await requirePatient();
   if (!authorized) {
     redirect("/auth/login");
   }
+
+  const profile = await prisma.patientProfile.findUnique({ where: { userId: user!.id } });
+  if (!user!.emailVerified) redirect("/auth/login");
+  if (!isPatientProfileComplete(profile)) redirect("/auth/complete-profile");
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-neutral-950">
