@@ -51,7 +51,7 @@ export default function VerifyForm() {
     setError(null);
 
     try {
-      const res = await (authClient as any).emailOtp.verifyEmail({
+      const res = await authClient.emailOtp.verifyEmail({
         email,
         otp,
       });
@@ -63,11 +63,10 @@ export default function VerifyForm() {
       }
 
       setSuccessMessage("Email verified successfully! Redirecting...");
-      setTimeout(() => {
-        window.location.href = "/patient/scans";
-      }, 1000);
-    } catch (err: any) {
-      setError(err?.message || "Failed to verify code. Please try again.");
+      router.replace("/auth/login?verified=1");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to verify code. Please try again.");
       setIsLoading(false);
     }
   };
@@ -82,7 +81,7 @@ export default function VerifyForm() {
     setError(null);
 
     try {
-      const res = await (authClient as any).emailOtp.sendVerificationOtp({
+      const res = await authClient.emailOtp.sendVerificationOtp({
         email,
         type: "email-verification",
       });
@@ -92,8 +91,8 @@ export default function VerifyForm() {
       } else {
         setSuccessMessage("A new verification code has been dispatched to your email.");
       }
-    } catch (err: any) {
-      setError(err?.message || "Failed to send code.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send code.");
     } finally {
       setIsResending(false);
     }

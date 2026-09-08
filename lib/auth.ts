@@ -2,8 +2,9 @@ import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { admin, emailOTP, phoneNumber } from "better-auth/plugins";
 
+import { adminAc, userAc } from "better-auth/plugins/admin/access";
 import { nextCookies } from "better-auth/next-js";
-import { sendEmail, sendEmailOrThrow } from "./email";
+import { sendEmailOrThrow } from "./brevo";
 import { prisma } from "./prisma";
 
 export const auth = betterAuth({
@@ -16,13 +17,15 @@ export const auth = betterAuth({
     requireEmailVerification: true,
     revokeSessionsOnPasswordReset: true,
     async sendResetPassword({ user, url }) {
-      await sendEmail({
+      await sendEmailOrThrow({
         to: user.email,
         subject: "Reset Your Password",
-        html: `Click The link: ${url}`,
+        text: `Reset your EczemaScan password using this link: ${url}. If you did not request this, ignore this email.`,
+        html: `<p>Reset your EczemaScan password:</p><p><a href="${url.replaceAll("&", "&amp;").replaceAll('"', "&quot;")}">Reset password</a></p><p>If you did not request this, ignore this email.</p>`,
       });
     },
   },
+  emailVerification: { sendOnSignUp: true, sendOnSignIn: true, autoSignInAfterVerification: false },
   socialProviders: {
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID as string,
@@ -32,10 +35,13 @@ export const auth = betterAuth({
   appName: "EczemaScan",
   plugins: [
     admin({
-      defaultRole: "patient",
+      defaultRole: "PATIENT",
+      adminRoles: ["ADMIN"],
+      roles: { ADMIN: adminAc, PATIENT: userAc, DERMATOLOGIST: userAc },
     }),
     phoneNumber(),
     emailOTP({
+      overrideDefaultEmailVerification: true,
       otpLength: 6,
       expiresIn: 600,
       resendStrategy: "rotate",

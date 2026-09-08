@@ -1,7 +1,8 @@
 "use server";
 
+import sharp from "sharp";
 import { prisma } from "@/lib/prisma";
-import { predictEczemaCondition } from "@/lib/brevo";
+import { predictEczemaCondition } from "@/lib/groq";
 import { getSession } from "@/lib/auth-server";
 import { ScanCondition, ScanStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
@@ -17,46 +18,35 @@ export async function createScan(formData: FormData) {
   }
 
   const imageFile = formData.get("image") as File;
-  const lesionLocation = formData.get("lesionLocation") as string;
-  const duration = formData.get("duration") as string;
-  const itchingSeverity = formData.get("itchingSeverity") as string;
-  const skinAppearance = formData.get("skinAppearance") as string;
-  const rednessLevel = formData.get("rednessLevel") as string;
-  const drynessScaling = formData.get("drynessScaling") as string;
-  const triggerExposure = formData.get("triggerExposure") as string;
-  const description = formData.get("description") as string;
-
-  if (!imageFile || imageFile.size === 0) {
+  if (!(imageFile instanceof File) || imageFile.size === 0) {
     return { error: "Image is required" };
   }
 
-  const patientProfile = await prisma.patientProfile.findUnique({
-    where: { userId: session.user.id },
-  });
+  if (!["image/jpeg", "image/png", "image/webp"].includes(imageFile.type) || imageFile.size > 10 * 1024 * 1024) {
+    return { error: "Upload a JPG, PNG, or WebP image up to 10MB." };
+  }
 
-  const age = patientProfile?.dateOfBirth
-    ? Math.floor((Date.now() - new Date(patientProfile.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
-    : 0;
+  let imageUrl: string;
+  try {
+    // Decode real pixels, limit decompression, normalize orientation and remove metadata.
+    const imageBuffer = await sharp(Buffer.from(await imageFile.arrayBuffer()), { limitInputPixels: 33_177_600 })
+      .rotate()
+      .resize({ width: 1536, height: 1536, fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality: 85 })
+      .toBuffer();
+    imageUrl = `data:image/jpeg;base64,${imageBuffer.toString("base64")}`;
+  } catch {
+    return { error: "The image could not be read. Please upload a valid JPG, PNG, or WebP photograph." };
+  }
 
-  const sex = patientProfile?.sex ?? "Unknown";
+  let aiResult;
+  try {
+    aiResult = await predictEczemaCondition({ imageUrl });
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Image analysis failed. Please try again." };
+  }
 
-  const aiResult = await predictEczemaCondition({
-    age,
-    sex,
-    lesionLocation,
-    duration,
-    itchingSeverity,
-    skinAppearance,
-    rednessLevel,
-    drynessScaling,
-    allergyHistory: patientProfile?.allergyHistory ?? false,
-    familyHistory: patientProfile?.familyHistory ?? false,
-    triggerExposure,
-    description,
-  });
-
-  const imageBuffer = Buffer.from(await imageFile.arrayBuffer());
-  const imageUrl = `/uploads/${Date.now()}-${imageFile.name}`;
+  // Persist the normalized photograph with its assessment, instead of a nonexistent upload path.
 
   const scan = await prisma.scan.create({
     data: {

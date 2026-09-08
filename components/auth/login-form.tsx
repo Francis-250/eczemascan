@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
-import { Loader2, AlertCircle, Sparkles } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -28,6 +28,10 @@ export default function LoginForm() {
       });
 
       if (res.error) {
+        if (res.error.code === "EMAIL_NOT_VERIFIED") {
+          router.replace(`/auth/verify?email=${encodeURIComponent(email)}`);
+          return;
+        }
         setError(
           res.error.message ||
             "Invalid credentials. Please verify your email and password.",
@@ -36,31 +40,26 @@ export default function LoginForm() {
         return;
       }
 
+      router.refresh();
       // Query session or user role
       const sessionRes = await authClient.getSession();
       const rawRole =
-        sessionRes?.data?.user?.role || (res.data?.user as any)?.role || "";
+        sessionRes?.data?.user?.role || res.data?.user?.role || "";
       const userRole = String(rawRole).toUpperCase();
 
       if (userRole === "ADMIN") {
-        window.location.href = "/admin/dashboard";
+        router.replace("/admin/dashboard");
       } else if (userRole === "DERMATOLOGIST") {
-        window.location.href = "/dermatologist/dashboard";
+        router.replace("/dermatologist/dashboard");
       } else {
-        window.location.href = "/patient/scans";
+        router.replace("/patient/scans");
       }
-    } catch (err: any) {
+    } catch (err) {
       setError(
-        err?.message || "An unexpected error occurred. Please try again.",
+        err instanceof Error ? err.message : "An unexpected error occurred. Please try again.",
       );
       setIsLoading(false);
     }
-  };
-
-  const fillCredentials = (userEmail: string, userPass: string) => {
-    setEmail(userEmail);
-    setPassword(userPass);
-    setError(null);
   };
 
   return (

@@ -17,7 +17,7 @@ export default function ForgotPasswordForm() {
     setError(null);
 
     try {
-      const res = await (authClient as any).forgetPassword({
+      const res = await authClient.requestPasswordReset({
         email,
         redirectTo: `${window.location.origin}/auth/reset-password`,
       });
@@ -29,8 +29,8 @@ export default function ForgotPasswordForm() {
       }
 
       setIsSent(true);
-    } catch (err: any) {
-      setError(err?.message || "Failed to request password reset. Please try again.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to request password reset. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -61,7 +61,7 @@ export default function ForgotPasswordForm() {
             <div className="flex items-start gap-2.5 rounded-md border border-green-200 bg-green-50 p-3.5 text-xs text-green-800 dark:border-green-900/50 dark:bg-green-950/40 dark:text-green-300">
               <CheckCircle2 className="h-4 w-4 shrink-0 text-green-600 mt-0.5" />
               <span>
-                A reset link has been dispatched to <strong>{email}</strong>. Please check your inbox and follow the instructions.
+                If an account exists for <strong>{email}</strong>, a reset link will arrive shortly. Please check your inbox.
               </span>
             </div>
 
