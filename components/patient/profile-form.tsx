@@ -12,7 +12,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { updatePatientProfile } from "@/lib/actions/profile";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const profileSchema = z.object({
   dateOfBirth: z.string().min(1, "Date of birth is required"),
@@ -34,12 +40,7 @@ const SKIN_TYPES = [
   "Type VI - Dark brown/black, never burns, tans very well",
 ];
 
-const SEX_OPTIONS = [
-  "Male",
-  "Female",
-  "Other",
-  "Prefer not to say",
-];
+const SEX_OPTIONS = ["Male", "Female", "Other", "Prefer not to say"];
 
 interface PatientProfileFormProps {
   onboarding?: boolean;
@@ -53,15 +54,26 @@ interface PatientProfileFormProps {
   } | null;
 }
 
-export default function PatientProfileForm({ initialProfile, onboarding = false }: PatientProfileFormProps) {
+export default function PatientProfileForm({
+  initialProfile,
+  onboarding = false,
+}: PatientProfileFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<ProfileFormData>({
+  const {
+    register,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors },
+  } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      dateOfBirth: initialProfile?.dateOfBirth ? initialProfile.dateOfBirth.toISOString().split("T")[0] : "",
+      dateOfBirth: initialProfile?.dateOfBirth
+        ? initialProfile.dateOfBirth.toISOString().split("T")[0]
+        : "",
       sex: initialProfile?.sex || "",
       skinType: initialProfile?.skinType || "",
       allergyHistory: initialProfile?.allergyHistory ?? false,
@@ -86,7 +98,11 @@ export default function PatientProfileForm({ initialProfile, onboarding = false 
       if (result.error) {
         alert(result.error);
       } else {
-        if (onboarding) { router.replace("/auth/continue"); router.refresh(); return; }
+        if (onboarding) {
+          router.replace("/auth/continue");
+          router.refresh();
+          return;
+        }
         setSuccess(true);
         setTimeout(() => setSuccess(false), 2000);
       }
@@ -100,9 +116,12 @@ export default function PatientProfileForm({ initialProfile, onboarding = false 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">{onboarding ? "Complete your profile" : "Patient Profile"}</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">
+          {onboarding ? "Complete your profile" : "Patient Profile"}
+        </h1>
         <p className="text-slate-600 dark:text-slate-400 mt-1">
-          Enter your date of birth and sex so your doctor has the correct patient details.
+          Enter your date of birth and sex so your doctor has the correct
+          patient details.
         </p>
       </div>
 
@@ -131,30 +150,46 @@ export default function PatientProfileForm({ initialProfile, onboarding = false 
             </div>
 
             <div>
-              {errors.dateOfBirth && <p className="text-sm text-red-600">{errors.dateOfBirth.message}</p>}
+              {errors.dateOfBirth && (
+                <p className="text-sm text-red-600">
+                  {errors.dateOfBirth.message}
+                </p>
+              )}
               <Label htmlFor="sex">Sex</Label>
-              <Select onValueChange={(v) => setValue("sex", v)} defaultValue={watch("sex")}>
+              <Select
+                onValueChange={(v) => setValue("sex", v)}
+                defaultValue={watch("sex")}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select sex" />
                 </SelectTrigger>
                 <SelectContent>
                   {SEX_OPTIONS.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div>
-              {errors.sex && <p className="text-sm text-red-600">{errors.sex.message}</p>}
+              {errors.sex && (
+                <p className="text-sm text-red-600">{errors.sex.message}</p>
+              )}
               <Label htmlFor="skinType">Fitzpatrick Skin Type</Label>
-              <Select onValueChange={(v) => setValue("skinType", v)} defaultValue={watch("skinType")}>
+              <Select
+                onValueChange={(v) => setValue("skinType", v)}
+                defaultValue={watch("skinType")}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select skin type" />
                 </SelectTrigger>
                 <SelectContent>
                   {SKIN_TYPES.map((s) => (
-                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                    <SelectItem key={s} value={s}>
+                      {s}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -181,7 +216,9 @@ export default function PatientProfileForm({ initialProfile, onboarding = false 
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <label className="font-medium text-slate-900 dark:text-slate-50">Allergy History</label>
+                <label className="font-medium text-slate-900 dark:text-slate-50">
+                  Allergy History
+                </label>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
                   Personal history of allergies, asthma, or hay fever
                 </p>
@@ -195,7 +232,9 @@ export default function PatientProfileForm({ initialProfile, onboarding = false 
 
             <div className="flex items-center justify-between">
               <div>
-                <label className="font-medium text-slate-900 dark:text-slate-50">Family History of Eczema</label>
+                <label className="font-medium text-slate-900 dark:text-slate-50">
+                  Family History of Eczema
+                </label>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
                   Close relatives with atopic dermatitis
                 </p>
@@ -220,9 +259,15 @@ export default function PatientProfileForm({ initialProfile, onboarding = false 
               "Save Changes"
             )}
           </Button>
-          {!onboarding && <Button type="button" variant="outline" onClick={() => router.back()}>
-            Cancel
-          </Button>}
+          {!onboarding && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.back()}
+            >
+              Cancel
+            </Button>
+          )}
         </div>
       </form>
 
@@ -233,9 +278,12 @@ export default function PatientProfileForm({ initialProfile, onboarding = false 
               Important
             </Badge>
             <div className="text-sm text-amber-800 dark:text-amber-300">
-              <p className="font-medium mb-1">Profile data is available to your reviewing doctor</p>
+              <p className="font-medium mb-1">
+                Profile data is available to your reviewing doctor
+              </p>
               <p>
-                Your doctor can review these details alongside your scan. Automated image analysis uses only the photograph.
+                Your doctor can review these details alongside your scan.
+                Automated image analysis uses only the photograph.
               </p>
             </div>
           </div>

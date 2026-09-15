@@ -8,7 +8,13 @@ export default async function CompleteProfilePage() {
   const session = await getSession();
   if (!session?.user || !session.user.emailVerified) redirect("/auth/login");
   if (session.user.role !== "PATIENT") redirect("/auth/continue");
-  const profile = await prisma.patientProfile.findUnique({ where: { userId: session.user.id } });
+  const profile = await prisma.patientProfile.findUnique({
+    where: { userId: session.user.id },
+  });
   if (isPatientProfileComplete(profile)) redirect("/patient/scans");
-  return <div className="w-full max-w-2xl p-6"><PatientProfileForm initialProfile={profile} onboarding /></div>;
+  return (
+    <div className="w-full max-w-2xl p-6">
+      <PatientProfileForm initialProfile={profile} onboarding />
+    </div>
+  );
 }

@@ -1,6 +1,4 @@
 import { z } from "zod";
-
-// Keep vision configuration separate from any text-only GROQ_MODEL setting.
 export const MODEL = process.env.GROQ_VISION_MODEL || "qwen/qwen3.6-27b";
 
 const resultSchema = z.object({

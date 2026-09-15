@@ -44,7 +44,9 @@ export default function LoginForm() {
       router.refresh();
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "An unexpected error occurred. Please try again.",
+        err instanceof Error
+          ? err.message
+          : "An unexpected error occurred. Please try again.",
       );
       setIsLoading(false);
     }
